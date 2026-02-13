@@ -13,7 +13,7 @@ function getAdminApp(): App {
     // Build service account from individual environment variables
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
 
     if (privateKey && clientEmail && projectId) {
       // Replace escaped newlines with actual newlines in private key
@@ -28,12 +28,12 @@ function getAdminApp(): App {
         projectId,
       });
     } else {
-      // Preferred in Firebase App Hosting / Cloud Run: use Application Default Credentials.
+      // Preferred in Firebase App Hosting: use Application Default Credentials.
       // Locally, this requires `gcloud auth application-default login` or a service account.
       console.warn('[Firebase Admin] Missing explicit service account env vars, using application default credentials');
       adminApp = initializeApp({
         credential: applicationDefault(),
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        projectId: process.env.FIREBASE_PROJECT_ID,
       });
     }
   } else {

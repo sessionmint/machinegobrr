@@ -5,11 +5,12 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { AddressType, BrowserSDK } from '@phantom/browser-sdk';
+import { AddressType, BrowserSDK, isMobileDevice } from '@phantom/browser-sdk';
 import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { PHANTOM_APP_ID } from '@/lib/constants';
 
@@ -27,15 +28,22 @@ interface PhantomWalletContextValue {
 const PhantomWalletContext = createContext<PhantomWalletContextValue | null>(null);
 
 function createPhantomSdk(): BrowserSDK {
+  const redirectUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/machinegobrrr`
+      : undefined;
   return new BrowserSDK({
-    providers: ['injected'],
+    // "deeplink" enables mobile support when the Phantom extension isn't installed.
+    providers: ['injected', 'deeplink'],
     addressTypes: [AddressType.solana],
     appId: PHANTOM_APP_ID || undefined,
+    authOptions: redirectUrl ? { redirectUrl } : undefined,
   });
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const sdkRef = useRef<BrowserSDK | null>(null);
+  const autoConnectAttemptedRef = useRef(false);
   const [address, setAddress] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
@@ -54,25 +62,45 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     await sdk.discoverWallets();
     const discoveredWallets = sdk.getDiscoveredWallets();
 
-    if (!discoveredWallets.length) {
-      throw new Error('No injected wallet found. Install/enable Phantom and reload.');
-    }
-
     return discoveredWallets;
   }, []);
 
   const pickWalletId = useCallback(
-    (wallets: ReturnType<BrowserSDK['getDiscoveredWallets']>): string => {
+    (wallets: ReturnType<BrowserSDK['getDiscoveredWallets']>): string | null => {
       const phantomWallet = wallets.find((wallet) => {
         const id = wallet.id.toLowerCase();
         const name = wallet.name.toLowerCase();
         return id === 'phantom' || name.includes('phantom');
       });
 
-      return phantomWallet?.id || wallets[0].id;
+      return phantomWallet?.id ?? null;
     },
     []
   );
+
+  useEffect(() => {
+    if (autoConnectAttemptedRef.current) return;
+    autoConnectAttemptedRef.current = true;
+
+    const sdk = getSdk();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await sdk.autoConnect();
+        const nextAddress = await resolveConnectedAddress(sdk);
+        if (!cancelled && nextAddress) {
+          setAddress(nextAddress);
+        }
+      } catch {
+        // No existing session (or autoConnect not supported for current provider set).
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getSdk, resolveConnectedAddress]);
 
   const connect = useCallback(async () => {
     if (connecting) return;
@@ -83,7 +111,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const discoveredWallets = await discoverInjectedWallets(sdk);
       const walletId = pickWalletId(discoveredWallets);
 
-      await sdk.connect({ provider: 'injected', walletId });
+      if (walletId) {
+        await sdk.connect({ provider: 'injected', walletId });
+      } else if (isMobileDevice()) {
+        // Mobile fallback - opens Phantom via deep link when extension injection isn't available.
+        await sdk.connect({ provider: 'deeplink' });
+      } else {
+        throw new Error('Phantom wallet not found. Install/enable Phantom and reload.');
+      }
+
       const nextAddress = await resolveConnectedAddress(sdk);
       if (!nextAddress) {
         throw new Error('Unable to get connected Phantom address');

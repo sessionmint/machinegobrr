@@ -55,50 +55,6 @@ export async function fetchCandles(tokenMint: string): Promise<Candle[]> {
   }
 }
 
-// Alternative: Fetch from Birdeye (more accurate OHLCV)
-export async function fetchCandlesBirdeye(tokenMint: string, limit: number = BUFFER_SIZE): Promise<Candle[]> {
-  const apiKey = process.env.BIRDEYE_API_KEY;
-  if (!apiKey) {
-    console.warn('[ChartSync] No Birdeye API key, falling back to DexScreener');
-    return fetchCandles(tokenMint);
-  }
-
-  try {
-    const now = Math.floor(Date.now() / 1000);
-    const from = now - (limit * 60); // limit minutes ago
-
-    const response = await fetch(
-      `https://public-api.birdeye.so/defi/ohlcv?address=${tokenMint}&type=1m&time_from=${from}&time_to=${now}`,
-      {
-        headers: {
-          'X-API-KEY': apiKey,
-          'x-chain': 'solana'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      console.error('[ChartSync] Birdeye API error:', response.status);
-      return fetchCandles(tokenMint);
-    }
-
-    const data = await response.json();
-    const items = data.data?.items || [];
-
-    return items.map((item: { o: number; h: number; l: number; c: number; v: number; unixTime: number }) => ({
-      open: item.o,
-      high: item.h,
-      low: item.l,
-      close: item.c,
-      volume: item.v,
-      timestamp: item.unixTime * 1000
-    }));
-  } catch (error) {
-    console.error('[ChartSync] Error fetching Birdeye candles:', error);
-    return fetchCandles(tokenMint);
-  }
-}
-
 // Compute EMA
 export function ema(values: number[], n: number): number {
   if (values.length === 0) return 0;
