@@ -1,0 +1,12 @@
+# Keep Cloud Run / Cloud Build source uploads small and avoid leaking local config.
+.git
+node_modules
+.next
+.firebase
+
+.env*
+
+*.log
+*.log.*
+
+.DS_Store

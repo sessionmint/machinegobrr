@@ -1,0 +1,28 @@
+# Firebase App Hosting configuration.
+# See https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  minInstances: 0
+  # maxInstances: 20
+  # concurrency: 80
+  # cpu: 1
+  # memoryMiB: 1024
+
+# Environment variables and secrets.
+# Tip: Prefer secrets (Cloud Secret Manager) for anything sensitive.
+#
+# env:
+#   - variable: NEXT_PUBLIC_APP_URL
+#     value: https://sessionmint.fun
+#     availability:
+#       - BUILD
+#       - RUNTIME
+#
+#   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+#     value: sessionmint-live
+#     availability:
+#       - BUILD
+#       - RUNTIME
+#
+#   - variable: HELIUS_API_KEY
+#     secret: helius-api-key
