@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import {
   Connection,
   LAMPORTS_PER_SOL,
@@ -176,13 +177,20 @@ export default function MachineGoBrrrPage() {
         </main>
 
         <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="brand-logo">
-              <img src="/logo-fav.jpg" alt="MachineGoBrrr logo" className="brand-logo-image" />
-            </div>
-            <div className="brand-text">
-              <h1>MachineGoBrrr</h1>
-              <span>
+            <div className="sidebar-header">
+              <div className="brand-logo">
+              <Image
+                src="/logo-fav.jpg"
+                alt="MachineGoBrrr logo"
+                className="brand-logo-image"
+                width={32}
+                height={32}
+                priority
+              />
+              </div>
+              <div className="brand-text">
+                <h1>MachineGoBrrr</h1>
+                <span>
                 <span className="dot" style={{ background: '#39ff14' }} />
                 SessionMint.fun
               </span>
